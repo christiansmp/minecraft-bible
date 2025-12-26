@@ -1,0 +1,6 @@
+com/yourname/bible/Bible.class
+com/yourname/bible/BibleGUI.class
+com/yourname/bible/BibleData.class
+com/yourname/bible/BibleCommand.class
+com/yourname/bible/BibleTabCompleter.class
+com/yourname/bible/GUIListener.class

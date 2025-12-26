@@ -1,0 +1,17 @@
+name: Bible
+version: 1.0.0
+main: com.yourname.bible.Bible
+api-version: '1.21'
+author: YourName
+description: Read the Bible in Minecraft
+
+commands:
+  bible:
+    description: Read Bible verses or open the Bible GUI
+    usage: /bible [open | <book> <chapter> <verse>]
+    permission: bible.use
+
+permissions:
+  bible.use:
+    description: Allows use of the Bible plugin
+    default: true
