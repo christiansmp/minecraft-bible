@@ -11,11 +11,11 @@ public class Bible extends JavaPlugin {
         bibleData = new BibleData();
         gui = new BibleGUI(this, bibleData);
         
-        BibleCommand commandExecutor = new BibleCommand(bibleData, gui);
+        BibleCommand commandExecutor = new BibleCommand(this, bibleData, gui);
         getCommand("bible").setExecutor(commandExecutor);
         getCommand("bible").setTabCompleter(new BibleTabCompleter(bibleData));
         
-        getServer().getPluginManager().registerEvents(new GUIListener(gui, bibleData), this);
+        getServer().getPluginManager().registerEvents(gui, this);
         
         getLogger().info("Bible plugin enabled!");
     }

@@ -3,17 +3,21 @@ package com.yourname.bible;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 public class BibleCommand implements CommandExecutor {
+    private final Plugin plugin;
     private final BibleData data;
     private final BibleGUI gui;
     
-    public BibleCommand(BibleData data, BibleGUI gui) {
+    public BibleCommand(Plugin plugin, BibleData data, BibleGUI gui) {
+        this.plugin = plugin;
         this.data = data;
         this.gui = gui;
     }
@@ -68,28 +72,27 @@ public class BibleCommand implements CommandExecutor {
                     return true;
                 }
                 
-                player.sendMessage(Component.text("Fetching verse...", NamedTextColor.GRAY));
+                String playerName = player.getName();
                 
                 // Fetch asynchronously to avoid lag
-                player.getServer().getScheduler().runTaskAsynchronously(
-                    gui.getPlugin(), 
-                    () -> {
-                        String verseText = data.fetchVerse(book, chapter, verse);
-                        
-                        player.getServer().getScheduler().runTask(gui.getPlugin(), () -> {
-                            if (verseText != null) {
-                                player.sendMessage(Component.empty());
-                                player.sendMessage(Component.text(book + " " + chapter + ":" + verse, 
-                                    NamedTextColor.GOLD, TextDecoration.BOLD));
-                                player.sendMessage(Component.text(verseText, NamedTextColor.WHITE));
-                                player.sendMessage(Component.empty());
-                            } else {
-                                player.sendMessage(Component.text("Verse not found or error occurred.", 
-                                    NamedTextColor.RED));
-                            }
-                        });
-                    }
-                );
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    String verseText = data.fetchVerse(book, chapter, verse);
+                    String reference = book + " " + chapter + ":" + verse;
+                    
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (verseText != null) {
+                            // Broadcast to all players
+                            Bukkit.broadcast(Component.text("📖 " + reference + " KJV", 
+                                NamedTextColor.GOLD, TextDecoration.BOLD));
+                            Bukkit.broadcast(Component.text(verseText, NamedTextColor.WHITE));
+                            Bukkit.broadcast(Component.text("   - Shared by " + playerName, 
+                                NamedTextColor.GRAY, TextDecoration.ITALIC));
+                        } else {
+                            player.sendMessage(Component.text("Verse not found or error occurred.", 
+                                NamedTextColor.RED));
+                        }
+                    });
+                });
                 
                 return true;
             } catch (NumberFormatException e) {
