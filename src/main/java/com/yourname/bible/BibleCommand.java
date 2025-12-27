@@ -113,7 +113,7 @@ public class BibleCommand implements CommandExecutor {
                 // Parse verse text to make superscript numbers bold
                 Component verseComponent = formatVerseWithBoldNumbers(verseText);
 
-                Component footer = Component.text("   - Shared by " + playerName,
+                Component footer = Component.text("    - Shared by " + playerName,
                         NamedTextColor.GRAY, TextDecoration.ITALIC);
 
                 // Broadcast to all players
