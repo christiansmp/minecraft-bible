@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Bible extends JavaPlugin {
     private BibleData bibleData;
     private BibleGUI gui;
+    private VerseOfTheDayManager verseOfTheDayManager;
 
     @Override
     public void onEnable() {
@@ -22,6 +23,9 @@ public class Bible extends JavaPlugin {
         // Initialize GUI
         gui = new BibleGUI(this, bibleData);
 
+        // Initialize Verse of the Day manager
+        verseOfTheDayManager = new VerseOfTheDayManager(this, bibleData);
+
         // Set up command executor and tab completer
         BibleCommand commandExecutor = new BibleCommand(this, bibleData, gui);
         getCommand("bible").setExecutor(commandExecutor);
@@ -29,6 +33,17 @@ public class Bible extends JavaPlugin {
 
         // Register GUI event listener
         getServer().getPluginManager().registerEvents(gui, this);
+
+        // Register player join listener for Verse of the Day
+        getServer().getPluginManager().registerEvents(
+            new PlayerJoinListener(this, verseOfTheDayManager), this);
+
+        // Pre-fetch today's verse asynchronously on startup
+        verseOfTheDayManager.getVerseOfTheDay().thenAccept(verse -> {
+            if (verse != null) {
+                getLogger().info("Verse of the Day loaded: " + verse.reference());
+            }
+        });
 
         getLogger().info("Bible plugin enabled!");
     }
