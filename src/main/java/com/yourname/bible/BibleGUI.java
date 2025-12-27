@@ -20,159 +20,271 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BibleGUI implements Listener {
     private final Plugin plugin;
     private final BibleData data;
+
+    // Player state tracking
     private final Map<Player, String> currentBook = new HashMap<>();
     private final Map<Player, Integer> currentChapter = new HashMap<>();
     private final Map<Player, Integer> bookPage = new HashMap<>();
-    
+    private final Map<Player, Integer> chapterPage = new HashMap<>();
+    private final Map<Player, Boolean> viewingNewTestament = new HashMap<>();
+
+    private static final int ITEMS_PER_PAGE = 45;
+
     public BibleGUI(Plugin plugin, BibleData data) {
         this.plugin = plugin;
         this.data = data;
     }
-    
+
+    /**
+     * Opens book selection starting with New Testament
+     */
     public void openBookSelection(Player player) {
+        viewingNewTestament.put(player, true);
         openBookSelectionPage(player, 0);
     }
-    
+
+    /**
+     * Opens book selection for Old Testament
+     */
+    public void openOldTestamentBooks(Player player) {
+        viewingNewTestament.put(player, false);
+        openBookSelectionPage(player, 0);
+    }
+
     private void openBookSelectionPage(Player player, int page) {
-        List<String> books = data.getBooks();
-        int booksPerPage = 45;
-        int maxPage = (books.size() - 1) / booksPerPage;
-        
+        boolean isNT = viewingNewTestament.getOrDefault(player, true);
+        List<String> books = isNT ? data.getNewTestamentBooks() : data.getOldTestamentBooks();
+
+        int maxPage = Math.max(0, (books.size() - 1) / ITEMS_PER_PAGE);
         if (page > maxPage) page = maxPage;
         if (page < 0) page = 0;
-        
+
         bookPage.put(player, page);
-        
-        Inventory inv = Bukkit.createInventory(null, 54, 
-            Component.text("Bible - Books (Page " + (page + 1) + ")", NamedTextColor.GOLD));
-        
-        int startIndex = page * booksPerPage;
-        int endIndex = Math.min(startIndex + booksPerPage, books.size());
-        
+
+        String title = isNT ? "Bible - New Testament" : "Bible - Old Testament";
+        Inventory inv = Bukkit.createInventory(null, 54,
+                Component.text(title, NamedTextColor.BLACK));
+
+        int startIndex = page * ITEMS_PER_PAGE;
+        int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, books.size());
+
         for (int i = startIndex; i < endIndex; i++) {
             String book = books.get(i);
-            ItemStack item = new ItemStack(Material.BOOK);
+            ItemStack item = new ItemStack(Material.BOOKSHELF);
             ItemMeta meta = item.getItemMeta();
-            meta.displayName(Component.text(book, NamedTextColor.AQUA, TextDecoration.BOLD));
-            
+            meta.displayName(Component.text(book, NamedTextColor.GOLD, TextDecoration.BOLD));
+
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text(data.getChapterCount(book) + " chapters", NamedTextColor.GRAY));
             meta.lore(lore);
-            
+
             item.setItemMeta(meta);
             inv.setItem(i - startIndex, item);
         }
-        
-        // Navigation buttons
+
+        // Bottom row navigation (slots 45-53)
+
+        // Previous page button (bottom-left, slot 45)
         if (page > 0) {
-            inv.setItem(48, createButton(Material.ARROW, "◄ Previous Page", NamedTextColor.YELLOW));
+            inv.setItem(45, createButton(Material.ARROW, "Previous Page", NamedTextColor.YELLOW));
         }
-        
+
+        // Testament toggle button (center, slot 49)
+        String toggleLabel = isNT ? "View Old Testament" : "View New Testament";
+        inv.setItem(49, createButton(Material.COMPASS, toggleLabel, NamedTextColor.LIGHT_PURPLE));
+
+        // Next page button (bottom-right, slot 53)
         if (page < maxPage) {
-            inv.setItem(50, createButton(Material.ARROW, "Next Page ►", NamedTextColor.GREEN));
+            inv.setItem(53, createButton(Material.ARROW, "Next Page", NamedTextColor.GREEN));
         }
-        
-        inv.setItem(49, createButton(Material.BARRIER, "✖ Close", NamedTextColor.RED));
-        
+
         player.openInventory(inv);
     }
-    
+
+    /**
+     * Opens chapter selection showing signed books for each chapter
+     */
     public void openChapterSelection(Player player, String book) {
+        openChapterSelectionPage(player, book, 0);
+    }
+
+    private void openChapterSelectionPage(Player player, String book, int page) {
         currentBook.put(player, book);
-        
+        chapterPage.put(player, page);
+
         int chapterCount = data.getChapterCount(book);
-        int size = 54;
-        
-        Inventory inv = Bukkit.createInventory(null, size, 
-            Component.text(book + " - Chapters", NamedTextColor.GOLD));
-        
-        // Add chapters (max 45 to leave room for navigation)
-        for (int i = 1; i <= Math.min(chapterCount, 45); i++) {
-            ItemStack item = new ItemStack(Material.PAPER);
-            ItemMeta meta = item.getItemMeta();
-            meta.displayName(Component.text("Chapter " + i, NamedTextColor.AQUA, TextDecoration.BOLD));
+        int maxPage = Math.max(0, (chapterCount - 1) / ITEMS_PER_PAGE);
+
+        if (page > maxPage) page = maxPage;
+        if (page < 0) page = 0;
+
+        String title = book + " - Chapters";
+        Inventory inv = Bukkit.createInventory(null, 54,
+                Component.text(title, NamedTextColor.BLACK));
+
+        int startChapter = page * ITEMS_PER_PAGE + 1;
+        int endChapter = Math.min(startChapter + ITEMS_PER_PAGE - 1, chapterCount);
+
+        // Add signed books for each chapter
+        for (int chapter = startChapter; chapter <= endChapter; chapter++) {
+            ItemStack item = new ItemStack(Material.WRITTEN_BOOK);
+            BookMeta meta = (BookMeta) item.getItemMeta();
+            meta.displayName(Component.text("Chapter " + chapter, NamedTextColor.GOLD, TextDecoration.BOLD));
+            meta.setTitle(book + " " + chapter);
+            meta.setAuthor("KJV");
+
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Click to read", NamedTextColor.GRAY));
+            meta.lore(lore);
+
             item.setItemMeta(meta);
-            inv.setItem(i - 1, item);
+            inv.setItem(chapter - startChapter, item);
         }
-        
-        // Navigation buttons at bottom
-        inv.setItem(45, createButton(Material.COMPASS, "🏠 Back to Books", NamedTextColor.YELLOW));
-        inv.setItem(49, createButton(Material.BARRIER, "✖ Close", NamedTextColor.RED));
-        
+
+        // Bottom row navigation
+
+        // Previous page button (bottom-left, slot 45)
+        if (page > 0) {
+            inv.setItem(45, createButton(Material.ARROW, "Previous Page", NamedTextColor.YELLOW));
+        }
+
+        // Back to Books button (center, slot 49)
+        inv.setItem(49, createButton(Material.COMPASS, "Back to Books", NamedTextColor.LIGHT_PURPLE));
+
+        // Next page button (bottom-right, slot 53)
+        if (page < maxPage) {
+            inv.setItem(53, createButton(Material.ARROW, "Next Page", NamedTextColor.GREEN));
+        }
+
         player.openInventory(inv);
     }
-    
+
+    /**
+     * Opens the chapter content directly in a book
+     */
     public void openChapterReader(Player player, String book, int chapter) {
         currentBook.put(player, book);
         currentChapter.put(player, chapter);
-        
-        Inventory inv = Bukkit.createInventory(null, 27, 
-            Component.text(book + " " + chapter, NamedTextColor.GOLD));
-        
-        ItemStack loading = new ItemStack(Material.BOOK);
-        ItemMeta loadingMeta = loading.getItemMeta();
-        loadingMeta.displayName(Component.text("Loading chapter...", NamedTextColor.YELLOW));
-        loading.setItemMeta(loadingMeta);
-        inv.setItem(13, loading);
-        
-        player.openInventory(inv);
-        
+
+        // Show loading message
+        player.sendMessage(Component.text("Loading " + book + " " + chapter + "...", NamedTextColor.GRAY));
+
         // Fetch chapter text asynchronously
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String text = data.fetchChapter(book, chapter);
-            
+
             Bukkit.getScheduler().runTask(plugin, () -> {
                 // Create a written book with the chapter text
                 ItemStack bookItem = new ItemStack(Material.WRITTEN_BOOK);
                 BookMeta bookMeta = (BookMeta) bookItem.getItemMeta();
-                
+
                 bookMeta.setTitle(book + " " + chapter);
                 bookMeta.setAuthor("KJV");
-                
-                // Split text into pages (256 chars per page)
-                List<Component> pages = new ArrayList<>();
-                String cleanText = text.replaceAll("\\n+", " ").replaceAll("\\d+", "").trim();
-                
-                int charsPerPage = 256;
-                for (int i = 0; i < cleanText.length(); i += charsPerPage) {
-                    int end = Math.min(i + charsPerPage, cleanText.length());
-                    String pageText = cleanText.substring(i, end);
-                    pages.add(Component.text(pageText, NamedTextColor.BLACK));
-                }
-                
+
+                // Format text with verse numbers
+                List<Component> pages = formatChapterWithVerses(text);
+
                 if (pages.isEmpty()) {
                     pages.add(Component.text("Chapter text unavailable.", NamedTextColor.RED));
                 }
-                
+
                 bookMeta.pages(pages);
                 bookItem.setItemMeta(bookMeta);
-                
-                inv.setItem(13, bookItem);
-                
-                // Navigation buttons
-                int maxChapter = data.getChapterCount(book);
-                
-                if (chapter > 1) {
-                    inv.setItem(18, createButton(Material.ARROW, "◄ Previous Chapter", NamedTextColor.YELLOW));
-                }
-                
-                if (chapter < maxChapter) {
-                    inv.setItem(26, createButton(Material.ARROW, "Next Chapter ►", NamedTextColor.GREEN));
-                }
-                
-                inv.setItem(21, createButton(Material.WRITABLE_BOOK, "📖 Back to Chapters", NamedTextColor.AQUA));
-                inv.setItem(22, createButton(Material.BOOKSHELF, "🏠 Back to Books", NamedTextColor.YELLOW));
-                inv.setItem(23, createButton(Material.BARRIER, "✖ Close", NamedTextColor.RED));
-                
-                player.updateInventory();
+
+                // Open the book directly for the player
+                player.openBook(bookItem);
             });
         });
     }
-    
+
+    /**
+     * Formats chapter text with verse numbers using gray superscript-style numbers
+     */
+    private List<Component> formatChapterWithVerses(String text) {
+        List<Component> pages = new ArrayList<>();
+
+        if (text == null || text.isEmpty()) {
+            return pages;
+        }
+
+        // Parse verses from the text - API returns format like "1 In the beginning... 2 And the earth..."
+        // We need to find verse numbers and format them
+        StringBuilder formattedText = new StringBuilder();
+
+        // Match verse numbers at the start of lines or after spaces
+        Pattern versePattern = Pattern.compile("(^|\\s)(\\d+)(\\s)");
+        Matcher matcher = versePattern.matcher(text);
+
+        int lastEnd = 0;
+        while (matcher.find()) {
+            // Add text before the verse number
+            formattedText.append(text, lastEnd, matcher.start());
+
+            // Add formatted verse number (using Unicode superscript)
+            String verseNum = matcher.group(2);
+            String superscript = toSuperscript(verseNum);
+            formattedText.append(matcher.group(1)).append(superscript).append(" ");
+
+            lastEnd = matcher.end();
+        }
+        // Add remaining text
+        formattedText.append(text.substring(lastEnd));
+
+        // Clean up extra whitespace
+        String cleanText = formattedText.toString()
+                .replaceAll("\\n+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        // Split into pages (256 chars per page for Minecraft books)
+        int charsPerPage = 256;
+        for (int i = 0; i < cleanText.length(); i += charsPerPage) {
+            int end = Math.min(i + charsPerPage, cleanText.length());
+            // Try to break at a space if possible
+            if (end < cleanText.length() && cleanText.charAt(end) != ' ') {
+                int lastSpace = cleanText.lastIndexOf(' ', end);
+                if (lastSpace > i) {
+                    end = lastSpace;
+                }
+            }
+            String pageText = cleanText.substring(i, end).trim();
+            pages.add(Component.text(pageText, NamedTextColor.BLACK));
+            i = end - charsPerPage; // Adjust for the space break
+            if (i < 0) i = 0;
+        }
+
+        return pages;
+    }
+
+    /**
+     * Converts a number string to Unicode superscript characters
+     */
+    private String toSuperscript(String number) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : number.toCharArray()) {
+            switch (c) {
+                case '0' -> sb.append('\u2070');
+                case '1' -> sb.append('\u00B9');
+                case '2' -> sb.append('\u00B2');
+                case '3' -> sb.append('\u00B3');
+                case '4' -> sb.append('\u2074');
+                case '5' -> sb.append('\u2075');
+                case '6' -> sb.append('\u2076');
+                case '7' -> sb.append('\u2077');
+                case '8' -> sb.append('\u2078');
+                case '9' -> sb.append('\u2079');
+                default -> sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     private ItemStack createButton(Material material, String name, NamedTextColor color) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -180,68 +292,102 @@ public class BibleGUI implements Listener {
         item.setItemMeta(meta);
         return item;
     }
-    
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        
+
         Component titleComponent = event.getView().title();
         String title = PlainTextComponentSerializer.plainText().serialize(titleComponent);
-        
+
         // Only handle our plugin's inventories
-        if (!title.startsWith("Bible") && !title.contains("Chapters") && !isBookChapter(title)) {
+        if (!title.startsWith("Bible") && !title.contains("Chapters")) {
             return;
         }
-        
+
         event.setCancelled(true); // Prevent item movement
-        
+
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
-        
-        // Check if player clicked on the written book to read it
-        if (clicked.getType() == Material.WRITTEN_BOOK && isBookChapter(title)) {
-            player.openBook(clicked);
-            return;
-        }
-        
+
         Component displayName = clicked.getItemMeta().displayName();
         if (displayName == null) return;
-        
+
         String itemName = PlainTextComponentSerializer.plainText().serialize(displayName);
-        
-        // Handle based on title
-        if (title.contains("Bible - Books")) {
-            handleBookSelection(player, itemName, title);
+
+        // Handle based on inventory title
+        if (title.startsWith("Bible - ")) {
+            handleBookSelection(player, clicked, itemName);
         } else if (title.contains("Chapters")) {
-            handleChapterSelection(player, itemName);
-        } else if (isBookChapter(title)) {
-            handleChapterReader(player, itemName);
+            handleChapterSelection(player, clicked, itemName, title);
         }
     }
-    
-    private void handleBookSelection(Player player, String itemName, String title) {
-        if (itemName.equals("✖ Close")) {
-            player.closeInventory();
-        } else if (itemName.equals("Next Page ►")) {
+
+    private void handleBookSelection(Player player, ItemStack clicked, String itemName) {
+        // Handle testament toggle
+        if (itemName.equals("View Old Testament")) {
+            openOldTestamentBooks(player);
+            return;
+        }
+        if (itemName.equals("View New Testament")) {
+            openBookSelection(player);
+            return;
+        }
+
+        // Handle pagination
+        if (itemName.equals("Next Page")) {
             int currentPage = bookPage.getOrDefault(player, 0);
             openBookSelectionPage(player, currentPage + 1);
-        } else if (itemName.equals("◄ Previous Page")) {
+            return;
+        }
+        if (itemName.equals("Previous Page")) {
             int currentPage = bookPage.getOrDefault(player, 0);
             openBookSelectionPage(player, currentPage - 1);
-        } else {
-            // Check if it's a book name
-            if (data.getBooks().contains(itemName)) {
+            return;
+        }
+
+        // Handle book selection (bookshelf items)
+        if (clicked.getType() == Material.BOOKSHELF) {
+            // Check if it's a valid book name
+            List<String> allBooks = data.getBooks();
+            if (allBooks.contains(itemName)) {
                 openChapterSelection(player, itemName);
             }
         }
     }
-    
-    private void handleChapterSelection(Player player, String itemName) {
-        if (itemName.equals("✖ Close")) {
-            player.closeInventory();
-        } else if (itemName.equals("🏠 Back to Books")) {
-            openBookSelection(player);
-        } else if (itemName.startsWith("Chapter ")) {
+
+    private void handleChapterSelection(Player player, ItemStack clicked, String itemName, String title) {
+        // Handle back to books
+        if (itemName.equals("Back to Books")) {
+            String book = currentBook.get(player);
+            if (book != null && data.isNewTestament(book)) {
+                openBookSelection(player);
+            } else {
+                openOldTestamentBooks(player);
+            }
+            return;
+        }
+
+        // Handle pagination
+        if (itemName.equals("Next Page")) {
+            String book = currentBook.get(player);
+            int currentPage = chapterPage.getOrDefault(player, 0);
+            if (book != null) {
+                openChapterSelectionPage(player, book, currentPage + 1);
+            }
+            return;
+        }
+        if (itemName.equals("Previous Page")) {
+            String book = currentBook.get(player);
+            int currentPage = chapterPage.getOrDefault(player, 0);
+            if (book != null) {
+                openChapterSelectionPage(player, book, currentPage - 1);
+            }
+            return;
+        }
+
+        // Handle chapter selection (written book items)
+        if (clicked.getType() == Material.WRITTEN_BOOK && itemName.startsWith("Chapter ")) {
             String book = currentBook.get(player);
             if (book != null) {
                 try {
@@ -252,34 +398,5 @@ public class BibleGUI implements Listener {
                 }
             }
         }
-    }
-    
-    private void handleChapterReader(Player player, String itemName) {
-        String book = currentBook.get(player);
-        Integer chapter = currentChapter.get(player);
-        
-        if (book == null || chapter == null) return;
-        
-        if (itemName.equals("✖ Close")) {
-            player.closeInventory();
-        } else if (itemName.equals("🏠 Back to Books")) {
-            openBookSelection(player);
-        } else if (itemName.equals("📖 Back to Chapters")) {
-            openChapterSelection(player, book);
-        } else if (itemName.equals("◄ Previous Chapter")) {
-            openChapterReader(player, book, chapter - 1);
-        } else if (itemName.equals("Next Chapter ►")) {
-            openChapterReader(player, book, chapter + 1);
-        }
-    }
-    
-    private boolean isBookChapter(String title) {
-        // Check if title is in format "BookName ChapterNumber"
-        for (String book : data.getBooks()) {
-            if (title.startsWith(book + " ")) {
-                return true;
-            }
-        }
-        return false;
     }
 }

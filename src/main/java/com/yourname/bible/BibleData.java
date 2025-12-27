@@ -11,81 +11,83 @@ import java.util.*;
 public class BibleData {
     private final Map<String, Integer> books = new LinkedHashMap<>();
     private final Map<String, String> bookAbbreviations = new HashMap<>();
-    
+    private final List<String> oldTestamentBooks = new ArrayList<>();
+    private final List<String> newTestamentBooks = new ArrayList<>();
+
     public BibleData() {
         initializeBooks();
     }
-    
+
     private void initializeBooks() {
         // Old Testament
-        books.put("Genesis", 50);
-        books.put("Exodus", 40);
-        books.put("Leviticus", 27);
-        books.put("Numbers", 36);
-        books.put("Deuteronomy", 34);
-        books.put("Joshua", 24);
-        books.put("Judges", 21);
-        books.put("Ruth", 4);
-        books.put("1 Samuel", 31);
-        books.put("2 Samuel", 24);
-        books.put("1 Kings", 22);
-        books.put("2 Kings", 25);
-        books.put("1 Chronicles", 29);
-        books.put("2 Chronicles", 36);
-        books.put("Ezra", 10);
-        books.put("Nehemiah", 13);
-        books.put("Esther", 10);
-        books.put("Job", 42);
-        books.put("Psalms", 150);
-        books.put("Proverbs", 31);
-        books.put("Ecclesiastes", 12);
-        books.put("Song of Solomon", 8);
-        books.put("Isaiah", 66);
-        books.put("Jeremiah", 52);
-        books.put("Lamentations", 5);
-        books.put("Ezekiel", 48);
-        books.put("Daniel", 12);
-        books.put("Hosea", 14);
-        books.put("Joel", 3);
-        books.put("Amos", 9);
-        books.put("Obadiah", 1);
-        books.put("Jonah", 4);
-        books.put("Micah", 7);
-        books.put("Nahum", 3);
-        books.put("Habakkuk", 3);
-        books.put("Zephaniah", 3);
-        books.put("Haggai", 2);
-        books.put("Zechariah", 14);
-        books.put("Malachi", 4);
-        
+        addOTBook("Genesis", 50);
+        addOTBook("Exodus", 40);
+        addOTBook("Leviticus", 27);
+        addOTBook("Numbers", 36);
+        addOTBook("Deuteronomy", 34);
+        addOTBook("Joshua", 24);
+        addOTBook("Judges", 21);
+        addOTBook("Ruth", 4);
+        addOTBook("1 Samuel", 31);
+        addOTBook("2 Samuel", 24);
+        addOTBook("1 Kings", 22);
+        addOTBook("2 Kings", 25);
+        addOTBook("1 Chronicles", 29);
+        addOTBook("2 Chronicles", 36);
+        addOTBook("Ezra", 10);
+        addOTBook("Nehemiah", 13);
+        addOTBook("Esther", 10);
+        addOTBook("Job", 42);
+        addOTBook("Psalms", 150);
+        addOTBook("Proverbs", 31);
+        addOTBook("Ecclesiastes", 12);
+        addOTBook("Song of Solomon", 8);
+        addOTBook("Isaiah", 66);
+        addOTBook("Jeremiah", 52);
+        addOTBook("Lamentations", 5);
+        addOTBook("Ezekiel", 48);
+        addOTBook("Daniel", 12);
+        addOTBook("Hosea", 14);
+        addOTBook("Joel", 3);
+        addOTBook("Amos", 9);
+        addOTBook("Obadiah", 1);
+        addOTBook("Jonah", 4);
+        addOTBook("Micah", 7);
+        addOTBook("Nahum", 3);
+        addOTBook("Habakkuk", 3);
+        addOTBook("Zephaniah", 3);
+        addOTBook("Haggai", 2);
+        addOTBook("Zechariah", 14);
+        addOTBook("Malachi", 4);
+
         // New Testament
-        books.put("Matthew", 28);
-        books.put("Mark", 16);
-        books.put("Luke", 24);
-        books.put("John", 21);
-        books.put("Acts", 28);
-        books.put("Romans", 16);
-        books.put("1 Corinthians", 16);
-        books.put("2 Corinthians", 13);
-        books.put("Galatians", 6);
-        books.put("Ephesians", 6);
-        books.put("Philippians", 4);
-        books.put("Colossians", 4);
-        books.put("1 Thessalonians", 5);
-        books.put("2 Thessalonians", 3);
-        books.put("1 Timothy", 6);
-        books.put("2 Timothy", 4);
-        books.put("Titus", 3);
-        books.put("Philemon", 1);
-        books.put("Hebrews", 13);
-        books.put("James", 5);
-        books.put("1 Peter", 5);
-        books.put("2 Peter", 3);
-        books.put("1 John", 5);
-        books.put("2 John", 1);
-        books.put("3 John", 1);
-        books.put("Jude", 1);
-        books.put("Revelation", 22);
+        addNTBook("Matthew", 28);
+        addNTBook("Mark", 16);
+        addNTBook("Luke", 24);
+        addNTBook("John", 21);
+        addNTBook("Acts", 28);
+        addNTBook("Romans", 16);
+        addNTBook("1 Corinthians", 16);
+        addNTBook("2 Corinthians", 13);
+        addNTBook("Galatians", 6);
+        addNTBook("Ephesians", 6);
+        addNTBook("Philippians", 4);
+        addNTBook("Colossians", 4);
+        addNTBook("1 Thessalonians", 5);
+        addNTBook("2 Thessalonians", 3);
+        addNTBook("1 Timothy", 6);
+        addNTBook("2 Timothy", 4);
+        addNTBook("Titus", 3);
+        addNTBook("Philemon", 1);
+        addNTBook("Hebrews", 13);
+        addNTBook("James", 5);
+        addNTBook("1 Peter", 5);
+        addNTBook("2 Peter", 3);
+        addNTBook("1 John", 5);
+        addNTBook("2 John", 1);
+        addNTBook("3 John", 1);
+        addNTBook("Jude", 1);
+        addNTBook("Revelation", 22);
         
         // Common abbreviations
         bookAbbreviations.put("gen", "Genesis");
@@ -100,9 +102,35 @@ public class BibleData {
         bookAbbreviations.put("ps", "Psalms");
         bookAbbreviations.put("prov", "Proverbs");
     }
-    
+
+    private void addOTBook(String name, int chapters) {
+        books.put(name, chapters);
+        oldTestamentBooks.add(name);
+    }
+
+    private void addNTBook(String name, int chapters) {
+        books.put(name, chapters);
+        newTestamentBooks.add(name);
+    }
+
     public List<String> getBooks() {
         return new ArrayList<>(books.keySet());
+    }
+
+    public List<String> getOldTestamentBooks() {
+        return new ArrayList<>(oldTestamentBooks);
+    }
+
+    public List<String> getNewTestamentBooks() {
+        return new ArrayList<>(newTestamentBooks);
+    }
+
+    public boolean isNewTestament(String book) {
+        return newTestamentBooks.contains(book);
+    }
+
+    public boolean isOldTestament(String book) {
+        return oldTestamentBooks.contains(book);
     }
     
     public int getChapterCount(String book) {
