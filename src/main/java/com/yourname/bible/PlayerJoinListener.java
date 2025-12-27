@@ -61,7 +61,7 @@ public class PlayerJoinListener implements Listener {
                 player.sendMessage(reference);
                 player.sendMessage(verseText);
                 player.sendMessage(footer);
-            }, 200L); // 10 second delay (20 ticks = 1 second)
+            }, 600L); // 10 second delay (20 ticks = 1 second)
         });
     }
 
