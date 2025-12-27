@@ -255,15 +255,9 @@ public class BibleCommand implements CommandExecutor {
     private void showUsage(Player player) {
         player.sendMessage(Component.text("Usage:", NamedTextColor.YELLOW));
         player.sendMessage(Component.text("  /bible open", NamedTextColor.GRAY)
-                .append(Component.text(" - Open Bible GUI", NamedTextColor.DARK_GRAY)));
+                .append(Component.text(" - Open Bible GUI", NamedTextColor.WHITE)));
         player.sendMessage(Component.text("  /bible <book> <chapter:verse>", NamedTextColor.GRAY)
-                .append(Component.text(" - Share a verse", NamedTextColor.DARK_GRAY)));
-        player.sendMessage(Component.text("  /bible <book> <chapter:start-end>", NamedTextColor.GRAY)
-                .append(Component.text(" - Share verse range", NamedTextColor.DARK_GRAY)));
-        player.sendMessage(Component.text("Examples:", NamedTextColor.YELLOW));
-        player.sendMessage(Component.text("  /bible John 3:16", NamedTextColor.GRAY));
-        player.sendMessage(Component.text("  /bible 1 John 4:15-16", NamedTextColor.GRAY));
-        player.sendMessage(Component.text("  /bible Song of Solomon 2:1-5", NamedTextColor.GRAY));
+                .append(Component.text(" - Share a verse", NamedTextColor.WHITE)));
     }
 
     /**
