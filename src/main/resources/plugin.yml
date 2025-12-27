@@ -8,7 +8,7 @@ description: Read the Bible in Minecraft
 commands:
   bible:
     description: Read Bible verses or open the Bible GUI
-    usage: /bible [open | <book> <chapter> <verse>]
+    usage: /bible [open | <book> <chapter:verse> | <book> <chapter:start-end>]
     permission: bible.use
 
 permissions:

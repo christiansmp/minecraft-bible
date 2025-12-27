@@ -1,6 +1,7 @@
 package com.yourname.bible;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -20,8 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class BibleGUI implements Listener {
     private final Plugin plugin;
@@ -167,122 +166,127 @@ public class BibleGUI implements Listener {
 
     /**
      * Opens the chapter content directly in a book
+     * Uses in-memory data for instant loading with bold superscript verse numbers
      */
     public void openChapterReader(Player player, String book, int chapter) {
         currentBook.put(player, book);
         currentChapter.put(player, chapter);
 
-        // Show loading message
-        player.sendMessage(Component.text("Loading " + book + " " + chapter + "...", NamedTextColor.GRAY));
+        // Get chapter text from in-memory data (instant!)
+        String text = data.getChapter(book, chapter);
 
-        // Fetch chapter text asynchronously
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            String text = data.fetchChapter(book, chapter);
+        // Create a written book with the chapter text
+        ItemStack bookItem = new ItemStack(Material.WRITTEN_BOOK);
+        BookMeta bookMeta = (BookMeta) bookItem.getItemMeta();
 
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                // Create a written book with the chapter text
-                ItemStack bookItem = new ItemStack(Material.WRITTEN_BOOK);
-                BookMeta bookMeta = (BookMeta) bookItem.getItemMeta();
+        bookMeta.setTitle(book + " " + chapter);
+        bookMeta.setAuthor("KJV");
 
-                bookMeta.setTitle(book + " " + chapter);
-                bookMeta.setAuthor("KJV");
+        // Format text with bold superscript verse numbers
+        List<Component> pages = formatChapterPages(text);
 
-                // Format text with verse numbers
-                List<Component> pages = formatChapterWithVerses(text);
+        if (pages.isEmpty()) {
+            pages.add(Component.text("Chapter text unavailable.", NamedTextColor.RED));
+        }
 
-                if (pages.isEmpty()) {
-                    pages.add(Component.text("Chapter text unavailable.", NamedTextColor.RED));
-                }
+        bookMeta.pages(pages);
+        bookItem.setItemMeta(bookMeta);
 
-                bookMeta.pages(pages);
-                bookItem.setItemMeta(bookMeta);
-
-                // Open the book directly for the player
-                player.openBook(bookItem);
-            });
-        });
+        // Open the book directly for the player
+        player.openBook(bookItem);
     }
 
     /**
-     * Formats chapter text with verse numbers using gray superscript-style numbers
+     * Formats chapter text into book pages with bold superscript verse numbers
      */
-    private List<Component> formatChapterWithVerses(String text) {
+    private List<Component> formatChapterPages(String text) {
         List<Component> pages = new ArrayList<>();
 
         if (text == null || text.isEmpty()) {
             return pages;
         }
 
-        // Parse verses from the text - API returns format like "1 In the beginning... 2 And the earth..."
-        // We need to find verse numbers and format them
-        StringBuilder formattedText = new StringBuilder();
-
-        // Match verse numbers at the start of lines or after spaces
-        Pattern versePattern = Pattern.compile("(^|\\s)(\\d+)(\\s)");
-        Matcher matcher = versePattern.matcher(text);
-
-        int lastEnd = 0;
-        while (matcher.find()) {
-            // Add text before the verse number
-            formattedText.append(text, lastEnd, matcher.start());
-
-            // Add formatted verse number (using Unicode superscript)
-            String verseNum = matcher.group(2);
-            String superscript = toSuperscript(verseNum);
-            formattedText.append(matcher.group(1)).append(superscript).append(" ");
-
-            lastEnd = matcher.end();
-        }
-        // Add remaining text
-        formattedText.append(text.substring(lastEnd));
+        // The text already has superscript verse numbers from BibleData.getChapter()
+        // We need to split it into pages and make the superscript numbers bold
 
         // Clean up extra whitespace
-        String cleanText = formattedText.toString()
-                .replaceAll("\\n+", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
+        String cleanText = text.replaceAll("\\s+", " ").trim();
 
-        // Split into pages (256 chars per page for Minecraft books)
-        int charsPerPage = 256;
-        for (int i = 0; i < cleanText.length(); i += charsPerPage) {
-            int end = Math.min(i + charsPerPage, cleanText.length());
-            // Try to break at a space if possible
-            if (end < cleanText.length() && cleanText.charAt(end) != ' ') {
-                int lastSpace = cleanText.lastIndexOf(' ', end);
-                if (lastSpace > i) {
-                    end = lastSpace;
+        // Split into pages (256 chars per page for Minecraft books, but we use less for readability)
+        int charsPerPage = 220;
+        int startPos = 0;
+
+        while (startPos < cleanText.length()) {
+            int endPos = Math.min(startPos + charsPerPage, cleanText.length());
+
+            // Try to break at a space if not at the end
+            if (endPos < cleanText.length()) {
+                int lastSpace = cleanText.lastIndexOf(' ', endPos);
+                if (lastSpace > startPos) {
+                    endPos = lastSpace;
                 }
             }
-            String pageText = cleanText.substring(i, end).trim();
-            pages.add(Component.text(pageText, NamedTextColor.BLACK));
-            i = end - charsPerPage; // Adjust for the space break
-            if (i < 0) i = 0;
+
+            String pageText = cleanText.substring(startPos, endPos).trim();
+            Component pageComponent = formatTextWithBoldSuperscript(pageText);
+            pages.add(pageComponent);
+
+            startPos = endPos + 1; // Skip the space
         }
 
         return pages;
     }
 
     /**
-     * Converts a number string to Unicode superscript characters
+     * Format text with bold superscript verse numbers
+     * Superscript digits get bold decoration, regular text stays normal
      */
-    private String toSuperscript(String number) {
-        StringBuilder sb = new StringBuilder();
-        for (char c : number.toCharArray()) {
-            switch (c) {
-                case '0' -> sb.append('\u2070');
-                case '1' -> sb.append('\u00B9');
-                case '2' -> sb.append('\u00B2');
-                case '3' -> sb.append('\u00B3');
-                case '4' -> sb.append('\u2074');
-                case '5' -> sb.append('\u2075');
-                case '6' -> sb.append('\u2076');
-                case '7' -> sb.append('\u2077');
-                case '8' -> sb.append('\u2078');
-                case '9' -> sb.append('\u2079');
-                default -> sb.append(c);
+    private Component formatTextWithBoldSuperscript(String text) {
+        TextComponent.Builder builder = Component.text();
+
+        StringBuilder currentText = new StringBuilder();
+        StringBuilder superscriptBuffer = new StringBuilder();
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (isSuperscriptDigit(c)) {
+                // If we have pending normal text, add it
+                if (currentText.length() > 0) {
+                    builder.append(Component.text(currentText.toString(), NamedTextColor.BLACK));
+                    currentText.setLength(0);
+                }
+                superscriptBuffer.append(c);
+            } else {
+                // If we have pending superscript, add it with bold
+                if (superscriptBuffer.length() > 0) {
+                    builder.append(Component.text(superscriptBuffer.toString(),
+                            NamedTextColor.BLACK, TextDecoration.BOLD));
+                    superscriptBuffer.setLength(0);
+                }
+                currentText.append(c);
             }
         }
-        return sb.toString();
+
+        // Add any remaining text
+        if (superscriptBuffer.length() > 0) {
+            builder.append(Component.text(superscriptBuffer.toString(),
+                    NamedTextColor.BLACK, TextDecoration.BOLD));
+        }
+        if (currentText.length() > 0) {
+            builder.append(Component.text(currentText.toString(), NamedTextColor.BLACK));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Check if a character is a Unicode superscript digit
+     */
+    private boolean isSuperscriptDigit(char c) {
+        return c == '\u2070' || c == '\u00B9' || c == '\u00B2' || c == '\u00B3' ||
+                c == '\u2074' || c == '\u2075' || c == '\u2076' || c == '\u2077' ||
+                c == '\u2078' || c == '\u2079';
     }
 
     private ItemStack createButton(Material material, String name, NamedTextColor color) {
