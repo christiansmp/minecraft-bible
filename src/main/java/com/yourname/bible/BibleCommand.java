@@ -107,14 +107,14 @@ public class BibleCommand implements CommandExecutor {
 
             if (verseText != null) {
                 // Build the message components with bold superscript verse numbers
-                Component header = Component.text("📖 ", NamedTextColor.GOLD, TextDecoration.BOLD)
-                        .append(Component.text(reference + " KJV", NamedTextColor.GOLD, TextDecoration.BOLD));
+                Component header = Component.text("📖 ", NamedTextColor.GREEN, TextDecoration.BOLD)
+                        .append(Component.text(reference + " KJV", NamedTextColor.GREEN, TextDecoration.BOLD));
 
                 // Parse verse text to make superscript numbers bold
                 Component verseComponent = formatVerseWithBoldNumbers(verseText);
 
                 Component footer = Component.text("    - Shared by " + playerName,
-                        NamedTextColor.GRAY, TextDecoration.ITALIC);
+                        NamedTextColor.LIGHT_PURPLE, TextDecoration.ITALIC);
 
                 // Broadcast to all players
                 Bukkit.broadcast(header);
@@ -214,16 +214,16 @@ public class BibleCommand implements CommandExecutor {
             if (isSuperscriptDigit(c)) {
                 // If we have pending normal text, add it
                 if (currentText.length() > 0) {
-                    builder.append(Component.text(currentText.toString(), NamedTextColor.WHITE));
+                    builder.append(Component.text(currentText.toString(), NamedTextColor.GRAY));
                     currentText.setLength(0);
                 }
                 superscriptBuffer.append(c);
                 inSuperscript = true;
             } else {
-                // If we have pending superscript, add it with bold
+                // If we have pending superscript, add it with bold gold
                 if (superscriptBuffer.length() > 0) {
                     builder.append(Component.text(superscriptBuffer.toString(),
-                            NamedTextColor.WHITE, TextDecoration.BOLD));
+                            NamedTextColor.GOLD, TextDecoration.BOLD));
                     superscriptBuffer.setLength(0);
                 }
                 currentText.append(c);
@@ -234,10 +234,10 @@ public class BibleCommand implements CommandExecutor {
         // Add any remaining text
         if (superscriptBuffer.length() > 0) {
             builder.append(Component.text(superscriptBuffer.toString(),
-                    NamedTextColor.WHITE, TextDecoration.BOLD));
+                    NamedTextColor.GOLD, TextDecoration.BOLD));
         }
         if (currentText.length() > 0) {
-            builder.append(Component.text(currentText.toString(), NamedTextColor.WHITE));
+            builder.append(Component.text(currentText.toString(), NamedTextColor.GRAY));
         }
 
         return builder.build();

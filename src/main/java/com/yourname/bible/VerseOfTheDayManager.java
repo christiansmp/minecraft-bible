@@ -148,7 +148,12 @@ public class VerseOfTheDayManager {
         if (endVerse != null && endVerse > startVerse) {
             verseText = bibleData.getVerseRange(resolvedBook, chapter, startVerse, endVerse);
         } else {
-            verseText = bibleData.getVerse(resolvedBook, chapter, startVerse);
+            String rawVerse = bibleData.getVerse(resolvedBook, chapter, startVerse);
+            if (rawVerse != null) {
+                verseText = bibleData.toBoldSuperscript(startVerse) + rawVerse;
+            } else {
+                verseText = null;
+            }
         }
 
         if (verseText == null) {
@@ -171,10 +176,10 @@ public class VerseOfTheDayManager {
     private VerseData getFallbackVerse() {
         String text = bibleData.getVerse("John", 3, 16);
         if (text != null) {
-            return new VerseData("John 3:16", text);
+            return new VerseData("John 3:16", bibleData.toBoldSuperscript(16) + text);
         }
         return new VerseData("Genesis 1:1",
-            "In the beginning God created the heaven and the earth.");
+            bibleData.toBoldSuperscript(1) + "In the beginning God created the heaven and the earth.");
     }
 
     /**

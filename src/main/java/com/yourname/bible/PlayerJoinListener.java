@@ -49,19 +49,19 @@ public class PlayerJoinListener implements Listener {
 
                 // Build the formatted message using Adventure API (native to Paper)
                 Component reference = Component.text()
-                    .append(Component.text("\uD83D\uDCD6 ", NamedTextColor.GOLD, TextDecoration.BOLD))
-                    .append(Component.text(verseData.reference(), NamedTextColor.GOLD, TextDecoration.BOLD))
-                    .append(Component.text(" KJV", NamedTextColor.GOLD, TextDecoration.BOLD))
+                    .append(Component.text("\uD83D\uDCD6 ", NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(verseData.reference(), NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(" KJV", NamedTextColor.GREEN, TextDecoration.BOLD))
                     .build();
 
                 Component verseText = formatVerseWithBoldNumbers(verseData.text());
 
-                Component footer = Component.text("    - Verse of the Day", NamedTextColor.GRAY, TextDecoration.ITALIC);
+                Component footer = Component.text("    - Verse of the Day", NamedTextColor.LIGHT_PURPLE, TextDecoration.ITALIC);
 
                 player.sendMessage(reference);
                 player.sendMessage(verseText);
                 player.sendMessage(footer);
-            }, 600L); // 10 second delay (20 ticks = 1 second)
+            }, 300L); // 15 second delay (20 ticks = 1 second)
         });
     }
 
@@ -76,16 +76,16 @@ public class PlayerJoinListener implements Listener {
         while (matcher.find()) {
             // Add text before the superscript
             if (matcher.start() > lastEnd) {
-                builder.append(Component.text(text.substring(lastEnd, matcher.start()), NamedTextColor.WHITE));
+                builder.append(Component.text(text.substring(lastEnd, matcher.start()), NamedTextColor.GRAY));
             }
-            // Add the superscript number in bold
-            builder.append(Component.text(matcher.group(1), NamedTextColor.WHITE, TextDecoration.BOLD));
+            // Add the superscript number in bold gold
+            builder.append(Component.text(matcher.group(1), NamedTextColor.GOLD, TextDecoration.BOLD));
             lastEnd = matcher.end();
         }
 
         // Add remaining text
         if (lastEnd < text.length()) {
-            builder.append(Component.text(text.substring(lastEnd), NamedTextColor.WHITE));
+            builder.append(Component.text(text.substring(lastEnd), NamedTextColor.GRAY));
         }
 
         return builder.build();
