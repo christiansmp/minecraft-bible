@@ -29,7 +29,7 @@ public class VerseOfTheDayManager {
 
     // Pattern to parse verse reference like "Psalm 103:1-2" or "John 3:16"
     private static final Pattern REFERENCE_PATTERN = Pattern.compile(
-        "^([123]?\\s*[A-Za-z]+(?:\\s+[A-Za-z]+)*)\\s+(\\d+):(\\d+)(?:-(\\d+))?$");
+        "^([123]?\\s*[A-Za-z]+(?:\\s+[A-Za-z]+)*)\\s+(\\d+):\\s*(\\d+)(?:\\s*-\\s*(\\d+))?$");
 
     private final Plugin plugin;
     private final BibleData bibleData;
